@@ -3,11 +3,11 @@
 	import { onMount } from 'svelte';
 
 	onMount(() => {
-		if ('serviceWorker' in navigator) {
-			navigator.serviceWorker.register('/service-worker.js', {
-				type: 'module'
-			});
-		}
+		//if ('serviceWorker' in navigator) {
+		//	navigator.serviceWorker.register('/service-worker.js', {
+		//		type: 'module'
+		//	});
+		//}
 	})
 	
 	let { children } = $props();

@@ -4,10 +4,10 @@
 
     let apiKey: string = '';
     let databaseId: string = '';
-    let subjects: { id: string, title: string }[] = [];
+    let subjects: { id: string, name: string }[] = [];
     let subject = '';
     let title: string = '';
-    let count: number = 0;
+    let count: number = 1;
 
     const getCookies = (): { apiKey: string, databaseId: string } => {
         const cookies = document.cookie.split(';');
@@ -27,15 +27,51 @@
         }
     }
 
-    onMount(() => {
-        const { apiKey, databaseId } = getCookies();
-        if (apiKey !== '' && databaseId !== '') {
-            cookieStore.set({ apiKey, databaseId })
+    const onSubjectChange = (event: Event) => {
+        const target = event.target as HTMLSelectElement;
+        subject = target.value;
+    }
+
+    const fetchNotionData = async () => {
+        try {
+            const response = await fetch('/api/notion/options', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    apiKey,
+                    databaseId
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'データの取得に失敗しました');
+            }
+
+            subjects = data as { id: string, name: string }[];
+        } catch (error) {
+            console.error('Error:', error);
+            throw error;
         }
-    })
+    }
+
+    onMount(async () => {
+        const { apiKey: savedApiKey, databaseId: savedDatabaseId } = getCookies();
+        if (savedApiKey && savedDatabaseId) {
+            apiKey = savedApiKey.split('=')[1];
+            databaseId = savedDatabaseId.split('=')[1];
+            cookieStore.set({ apiKey, databaseId });
+            await fetchNotionData();
+        } else {
+            cookieStore.set(null);
+        }
+    });
 </script>
 
-<main class="w-[100svw] h-[100svh] bg-sky-200">
+<main class="w-[100svw] h-[100svh] bg-sky-200 flex justify-center">
     {#if !$cookieStore}
         <div class="w-[100svw] h-[100svh] fixed top-0 left-0 bg-black/40 z-10">
             <div class="w-full h-full relative">
@@ -58,28 +94,31 @@
             </div>
         </div>
     {/if}
-    <div class="w-full h-full p-10 flex flex-col gap-4">
+    <div class="w-full max-w-[720px] h-full p-10 flex flex-col gap-4">
         <h1 class="text-xl">ManaNotion</h1>
-        <div>
-            <div>
-                <p>Subject</p>
-                <select bind:value={subject}>
+        <div class="flex flex-col gap-4">
+            <div class="grid grid-cols-[80px_1fr] gap-2">
+                <p class="flex justify-start items-center">Subject</p>
+                <select
+                  bind:value={subject}
+                  on:change={onSubjectChange}
+                >
                     {#each subjects as subject}
-                        <option value={subject.id}>{subject.title}</option>
+                        <option value={subject.id}>{subject.name}</option>
                     {/each}
                 </select>
             </div>
-            <div>
-                <p>Title</p>
+            <div class="grid grid-cols-[80px_1fr] gap-2">
+                <p class="flex justify-start items-center">Title</p>
                 <input type="text" bind:value={title} />
             </div>
-            <div>
-                <p>Count</p>
+            <div class="grid grid-cols-[80px_1fr] gap-2">
+                <p class="flex justify-start items-center">Count</p>
                 <input type="number" bind:value={count} />
             </div>
         </div>
-        <div>
-            <button>Submit</button>
+        <div class="flex justify-end">
+            <button class="w-[6rem] h-[2rem] bg-sky-600 text-sky-50 rounded-md shadow-md shadow-sky-800/20">Submit</button>
         </div>
     </div>
 </main>
